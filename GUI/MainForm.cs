@@ -11,14 +11,14 @@ using System.IO.Ports;
 
 namespace SpectrumViewer
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         private Analyser _analyser;                 //Analyser DLL
         private SerialPort _port;                   //Serial port to communication
         private Boolean _isHided;                   //Hide controllers
         private int windowWidth, windowHeight;      //Window size
 
-        public Form1()      
+        public MainForm()      
         {
             InitializeComponent();
             _analyser = new Analyser( chart1, deviceBox);

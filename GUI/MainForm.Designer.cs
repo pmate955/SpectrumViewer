@@ -1,6 +1,6 @@
 ﻿namespace SpectrumViewer
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -60,7 +60,7 @@
             // 
             // chart1
             // 
-            chartArea1.AxisX.Maximum = 90D;
+            chartArea1.AxisX.Maximum = 64D;
             chartArea1.AxisX.Minimum = 0D;
             chartArea1.AxisY.Maximum = 255D;
             chartArea1.AxisY.Minimum = 0D;
