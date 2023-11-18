@@ -44,7 +44,7 @@ namespace SpectrumViewer
                             int num = Int32.Parse(columns[1]);
                             if (deviceBox.Items.Count > num) deviceBox.SelectedIndex = num;
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
 
                         }
@@ -75,7 +75,7 @@ namespace SpectrumViewer
                         {
                             int num = Int32.Parse(columns[1]);
                             colorBox.SelectedIndex = num;
-                        } catch (Exception n)
+                        } catch (Exception)
                         {
 
                         }
@@ -145,14 +145,12 @@ namespace SpectrumViewer
                     _port.DataBits = 8;
                     _port.DtrEnable = true;
                     _port.Open();
-                    _analyser.Serial = _port;
-                    
-                    
+                    _analyser.Port = _port;
                 }
                 else
                 {
                     portBox.Enabled = true;
-                    _analyser.Serial = null;
+                    _analyser.Port = null;
                     if (_port != null)
                     {
                       _port.Close();
@@ -172,8 +170,6 @@ namespace SpectrumViewer
             this.TopMost = alwaysOnTopCb.Checked;
         }
         
-        
-
         private void Form1_MouseDoubleClick(object sender, MouseEventArgs e)            //Hide/Show controls 
         {
             if (!_isHided)                                         //Hide controls
@@ -199,9 +195,9 @@ namespace SpectrumViewer
                 windowWidth = this.Width;
                 windowHeight = this.Height;
                 _isHided = false;
-                if (this.Height < 211)
+                if (this.Height <250)
                 {
-                    this.Height = 211;
+                    this.Height = 250;
                     chart1.Height = windowHeight - 40;
                 }
                 this.Width = chart1.Width + 162;
@@ -224,19 +220,22 @@ namespace SpectrumViewer
         }
 
         private void DotModeBtn_CheckedChanged(object sender, EventArgs e)          //Dot mode
-        {
-            if (_port != null)
+        {          
+            if (chart1.Series[0].ChartType == System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point)
             {
-                _port.Write("x");
+                chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
+                this._analyser.SetDotMode(false);
             }
-            if (chart1.Series[0].ChartType == System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point) chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
-            else chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point;
-
+            else
+            {
+                chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point;
+                this._analyser.SetDotMode(true);
+            }
         }
 
         private void colorBox_SelectedIndexChanged(object sender, EventArgs e)      //Select color
         {
-            _analyser.set_variableColor(colorBox.SelectedIndex);
+            this._analyser.SetColor(colorBox.SelectedIndex);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -255,6 +254,11 @@ namespace SpectrumViewer
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        private void brightnessBar_ValueChanged(object sender, EventArgs e)
+        {
+            this._analyser.SetBrightness(((TrackBar)(sender)).Value);
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)

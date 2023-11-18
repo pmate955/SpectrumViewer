@@ -14,9 +14,39 @@ namespace SpectrumViewer
 {
     class Analyser
     {
-        private bool _enable;               //enabled status
+        public Analyser(Chart ch, ComboBox devicelist)
+        {
+            this._fftData = new float[1024];
+            this._lastlevel = 0;
+            this._hanctr = 0;
+            this._t = new DispatcherTimer();
+            this._t.Tick += _t_Tick;
+            this._t.Interval = TimeSpan.FromMilliseconds(20); //40hz refresh rate
+            this._t.IsEnabled = false;
+            this._process = new WASAPIPROC(Process);
+            this._spectrumdata = new List<byte>();
+            this._devicelist = devicelist;
+            this._initialized = false;
+            this._chart = ch;
+            this._isRealMode = false;
+            this._variableColor = 0;
+            this._sb = new StringBuilder(91);
+            this._max = new byte[this._lines];
+            this._isDotMode = false;
+            this._darkness = 100;
+            Init();
+        }
+
+        // Serial port for arduino output
+        public SerialPort Port { get; set; }
+
+
+        // flag for display enable
+        public bool DisplayEnable { get; set; }
+
+        private bool _isEnabled;            //enabled status
         private DispatcherTimer _t;         //timer that refreshes the display
-        private float[] _fft;               //buffer for fft data
+        private float[] _fftData;           //buffer for fft data
         private WASAPIPROC _process;        //callback function to obtain data
         private int _lastlevel;             //last output level
         private int _hanctr;                //last output level counter
@@ -24,44 +54,24 @@ namespace SpectrumViewer
         private ComboBox _devicelist;       //device list
         private bool _initialized;          //initialized flag
         private int devindex;               //used device index
-        private byte[] max;                 //Store peak values
-        private bool _realMode;          //Realtime visualization
-        private char[] output;              //char data for serial
+        private byte[] _max;                 //Store peak values
+        private bool _isRealMode;           //Realtime visualization
         private int _lines = 64;            //number of spectrum lines (channels)
         private Chart _chart;               //ChartView for Form
         private StringBuilder _sb;          //Output stringbuilder for Serial
-        private int _variableColor;     //Bar color depends on level
+        private int _variableColor;         //Bar color depends on level
+        
+        /// <summary>
+        /// Is the dot mode enabled
+        /// </summary>
+        private bool _isDotMode;
+        
+        /// <summary>
+        /// Every color channel reduced by this value
+        /// </summary>
+        private byte _darkness;      
 
-        public Analyser(Chart ch, ComboBox devicelist)
-        {
-            _fft = new float[1024];
-            output = new char[_lines];
-            _lastlevel = 0;
-            _hanctr = 0;
-            _t = new DispatcherTimer();
-            _t.Tick += _t_Tick;
-            _t.Interval = TimeSpan.FromMilliseconds(20); //40hz refresh rate
-            _t.IsEnabled = false;
-            _process = new WASAPIPROC(Process);
-            _spectrumdata = new List<byte>();
-            _devicelist = devicelist;
-            _initialized = false;
-            _chart = ch;
-            _realMode = false;
-            _variableColor = 0;
-            _sb = new StringBuilder(91);
-            max = new byte[this._lines];
-            Init();
-        }
-
-        // Serial port for arduino output
-        public SerialPort Serial { get; set; }
-
-
-        // flag for display enable
-        public bool DisplayEnable { get; set; }
-
-        public void set_variableColor(int value)
+        public void SetColor(int value)
         {
             _variableColor = value;
             if (_variableColor < 8)
@@ -81,13 +91,26 @@ namespace SpectrumViewer
 
         }
 
+        public void SetBrightness(int value)
+        {
+            if (value >= 0 && value < 255)
+            {
+                this._darkness = (byte)(255 - value);
+            }
+        }
+
+        public void SetDotMode(bool isDotMode)
+        {
+            this._isDotMode = isDotMode;
+        }
+
         //flag for enabling and disabling program functionality
         public bool Enable
         {
-            get { return _enable; }
+            get { return _isEnabled; }
             set
             {
-                _enable = value;
+                _isEnabled = value;
                 if (value)
                 {
                     if (!_initialized)
@@ -134,16 +157,14 @@ namespace SpectrumViewer
 
         public void changeRealMode()
         {
-            _realMode = !_realMode;
+            _isRealMode = !_isRealMode;
         }
-
-
 
         //timer 
         private void _t_Tick(object sender, EventArgs e)
         {
 
-            int ret = BassWasapi.BASS_WASAPI_GetData(_fft, (int)BASSData.BASS_DATA_FFT2048); //get channel fft data
+            int ret = BassWasapi.BASS_WASAPI_GetData(_fftData, (int)BASSData.BASS_DATA_FFT2048); //get channel fft data
             if (ret < -1) return;
             int x, y;
             int b0 = 0;
@@ -157,7 +178,7 @@ namespace SpectrumViewer
                 if (b1 <= b0) b1 = b0 + 1;
                 for (; b0 < b1; b0++)
                 {
-                    if (peak < _fft[1 + b0]) peak = _fft[1 + b0];
+                    if (peak < _fftData[1 + b0]) peak = _fftData[1 + b0];
                 }
                 y = (int)(Math.Sqrt(peak) * 3 * 255 - 4);
                 if (y > 255) y = 255;
@@ -171,95 +192,57 @@ namespace SpectrumViewer
             }
 
             _sb.Clear();
-            this.SendColor();
+            this._sendDotMode();
+            this._sendColor();
             _sb.Append('_');
 
             for (int i = 0; i < _spectrumdata.Count; i++)
             {
-                if (!_realMode)
+                if (!_isRealMode)
                 {
-                    if (_spectrumdata[i] > max[i]) max[i] = _spectrumdata[i];               //if the new level is greater than original, then set to max
-                    else if (max[i] >= 12 && _spectrumdata[i] < max[i] - 5) max[i] -= 12;     //if greater than 12 and difference is bigger than 5, decrease by 12
-                    else if (max[i] > 0) max[i]--;                                          //else decrease by one
+                    if (_spectrumdata[i] > _max[i]) _max[i] = _spectrumdata[i];               //if the new level is greater than original, then set to max
+                    else if (_max[i] >= 12 && _spectrumdata[i] < _max[i] - 5) _max[i] -= 12;     //if greater than 12 and difference is bigger than 5, decrease by 12
+                    else if (_max[i] > 0) _max[i]--;                                          //else decrease by one
                 }
                 else
                 {
-                    max[i] = _spectrumdata[i];
+                    _max[i] = _spectrumdata[i];
                 }
                 if (DisplayEnable)
                 {
-                    _chart.Series[0].Points.AddXY(i + 1, max[i]);
+                    _chart.Series[0].Points.AddXY(i + 1, _max[i]);
                     if (_variableColor == 5)                                    //Dynamic pink
                     {
-                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(max[i], 0, 150);
+                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(_max[i], 0, 150);
                     }
                     else if (_variableColor == 6)                              //Default dynamic
                     {
-                        if (max[i] < 65) _chart.Series[0].Points[i].Color = System.Drawing.Color.Lime;
-                        else if (max[i] < 130) _chart.Series[0].Points[i].Color = System.Drawing.Color.Yellow;
-                        else if (max[i] < 189) _chart.Series[0].Points[i].Color = System.Drawing.Color.Orange;
+                        if (_max[i] < 65) _chart.Series[0].Points[i].Color = System.Drawing.Color.Lime;
+                        else if (_max[i] < 130) _chart.Series[0].Points[i].Color = System.Drawing.Color.Yellow;
+                        else if (_max[i] < 189) _chart.Series[0].Points[i].Color = System.Drawing.Color.Orange;
                         else _chart.Series[0].Points[i].Color = System.Drawing.Color.Red;
                     }
                     else if (_variableColor == 7)                              //Dynamic cyan
                     {
-                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(0, max[i], 150);
+                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(0, _max[i], 150);
                     }
                     else if (_variableColor == 8)                              //Dynamic Fire
                     {
-                        //_chart.Series[0].Color = System.Drawing.Color.Red;
-                        //_chart.Series[0].BackSecondaryColor = System.Drawing.Color.Yellow;
-                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(max[i], 0, 0);
-                        _chart.Series[0].Points[i].BackSecondaryColor = System.Drawing.Color.FromArgb(250, max[i], 31); ;
+                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(_max[i], 0, 0);
+                        _chart.Series[0].Points[i].BackSecondaryColor = System.Drawing.Color.FromArgb(250, _max[i], 31); ;
                     }
                     else if (_variableColor == 9)                              //Dynamic sth
                     {
-                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(max[i], 0, 140);
-                        _chart.Series[0].Points[i].BackSecondaryColor = System.Drawing.Color.FromArgb(0, max[i], 255);
+                        _chart.Series[0].Points[i].Color = System.Drawing.Color.FromArgb(_max[i], 0, 140);
+                        _chart.Series[0].Points[i].BackSecondaryColor = System.Drawing.Color.FromArgb(0, _max[i], 255);
                     }
                 }
-                char c;
-                byte b = max[i];
-                if (b < 8) c = 'a';
-                else if (b < 16) c = 'b';
-                else if (b < 24) c = 'c';
-                else if (b < 32) c = 'd';
-                else if (b < 40) c = 'e';
-                else if (b < 48) c = 'f';
-                else if (b < 56) c = 'g';
-                else if (b < 64) c = 'h';
-                else if (b < 72) c = 'i';
-                else if (b < 80) c = 'j';
-                else if (b < 88) c = 'k';
-                else if (b < 96) c = 'l';
-                else if (b < 104) c = 'm';
-                else if (b < 112) c = 'n';
-                else if (b < 120) c = 'o';
-                else if (b < 128) c = 'q';
-                else if (b < 136) c = 'r';
-                else if (b < 144) c = 's';
-                else if (b < 152) c = 't';
-                else if (b < 160) c = 'u';
-                else if (b < 168) c = 'v';
-                else if (b < 176) c = 'w';
-                else if (b < 184) c = 'x';
-                else if (b < 192) c = 'y';
-                else if (b < 200) c = 'z';
-                else if (b < 208) c = 'A';
-                else if (b < 216) c = 'B';
-                else if (b < 224) c = 'C';
-                else if (b < 232) c = 'D';
-                else if (b < 240) c = 'E';
-                else if (b < 248) c = 'F';
-                else c = 'G';
+                char c = _getLevelCharacter(i);
                 _sb.Append(c);
             }
 
-            //Console.WriteLine(output);
-            if (Serial != null) Serial.Write(_sb.ToString()); //Serial.Write(output);
-            //Console.WriteLine();
-
+            if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
             _spectrumdata.Clear();
-
 
             int level = BassWasapi.BASS_WASAPI_GetLevel();
             if (level == _lastlevel && level != 0) _hanctr++;
@@ -284,44 +267,96 @@ namespace SpectrumViewer
 
         }
 
-        private void SendColor()
+        /// <summary>
+        /// Returns the character for given level
+        /// </summary>
+        /// <param name="i">Value between 0-255</param>
+        /// <returns></returns>
+        private char _getLevelCharacter(int i)
         {
-            if (Serial != null)
+            char c;
+            byte b = _max[i];
+            if (b < 8) c = 'a';
+            else if (b < 16) c = 'b';
+            else if (b < 24) c = 'c';
+            else if (b < 32) c = 'd';
+            else if (b < 40) c = 'e';
+            else if (b < 48) c = 'f';
+            else if (b < 56) c = 'g';
+            else if (b < 64) c = 'h';
+            else if (b < 72) c = 'i';
+            else if (b < 80) c = 'j';
+            else if (b < 88) c = 'k';
+            else if (b < 96) c = 'l';
+            else if (b < 104) c = 'm';
+            else if (b < 112) c = 'n';
+            else if (b < 120) c = 'o';
+            else if (b < 128) c = 'q';
+            else if (b < 136) c = 'r';
+            else if (b < 144) c = 's';
+            else if (b < 152) c = 't';
+            else if (b < 160) c = 'u';
+            else if (b < 168) c = 'v';
+            else if (b < 176) c = 'w';
+            else if (b < 184) c = 'x';
+            else if (b < 192) c = 'y';
+            else if (b < 200) c = 'z';
+            else if (b < 208) c = 'A';
+            else if (b < 216) c = 'B';
+            else if (b < 224) c = 'C';
+            else if (b < 232) c = 'D';
+            else if (b < 240) c = 'E';
+            else if (b < 248) c = 'F';
+            else c = 'G';
+            return c;
+        }
+
+        /// <summary>
+        /// It sends a dot if we are in dot mode
+        /// </summary>
+        private void _sendDotMode()
+        {
+            if (Port != null && this._isDotMode)
             {
-                Serial.Write(";");
-                byte r, g, b;
+                Port.Write(".");
+            }
+        }
+
+        /// <summary>
+        /// It sends the graph color to Serial
+        /// </summary>
+        private void _sendColor()
+        {
+            if (Port != null)
+            {
+                Port.Write(";");
+                byte r = 0, g = 0, b = 0;
                 if (_variableColor == 0)
                 {
-                    r = 0;
-                    g = 0;
-                    b = 200;
+                    b = (byte)(0xff - this._darkness);
                 }
                 else if (this._variableColor == 1)
                 {
-                    r = 0;
-                    g = 200;
-                    b = 0;
+                    g = (byte)(0xff - this._darkness); ;
                 }
                 else if (this._variableColor == 2)
                 {
-                    r = 200;
-                    g = 0;
-                    b = 0;
+                    r = (byte)(0xff - this._darkness);
                 }
                 else if (this._variableColor == 3)
                 {
-                    r = 0;
-                    g = 200;
-                    b = 200;
+                    g = (byte)(0xff - this._darkness);
+                    b = (byte)(0xff - this._darkness);
                 }
                 else
                 {
-                    r = 200;
-                    g = 200;
-                    b = 200;
+                    r = (byte)(0xff - this._darkness); ;
+                    g = (byte)(0xff - this._darkness); ;
+                    b = (byte)(0xff - this._darkness); ;
                 }
-                Serial.Write(new byte[] { r, g, b }, 0, 3);
-                Serial.Write(";");
+
+                Port.Write(new byte[] { r, g, b }, 0, 3);
+                Port.Write(";");
             }
         }
 

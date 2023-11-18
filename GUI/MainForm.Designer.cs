@@ -42,7 +42,9 @@
             this.DotModeBtn = new System.Windows.Forms.CheckBox();
             this.colorBox = new System.Windows.Forms.ComboBox();
             this.ButtonToolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.brightnessBar = new System.Windows.Forms.TrackBar();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.brightnessBar)).BeginInit();
             this.SuspendLayout();
             // 
             // ckbEnable
@@ -81,7 +83,7 @@
             series1.IsVisibleInLegend = false;
             series1.Name = "Series1";
             this.chart1.Series.Add(series1);
-            this.chart1.Size = new System.Drawing.Size(545, 163);
+            this.chart1.Size = new System.Drawing.Size(545, 187);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
             this.chart1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
@@ -193,11 +195,24 @@
             this.ButtonToolTip.SetToolTip(this.colorBox, "Chart color");
             this.colorBox.SelectedIndexChanged += new System.EventHandler(this.colorBox_SelectedIndexChanged);
             // 
-            // Form1
+            // brightnessBar
+            // 
+            this.brightnessBar.Location = new System.Drawing.Point(13, 168);
+            this.brightnessBar.Maximum = 250;
+            this.brightnessBar.Minimum = 30;
+            this.brightnessBar.Name = "brightnessBar";
+            this.brightnessBar.Size = new System.Drawing.Size(113, 45);
+            this.brightnessBar.TabIndex = 13;
+            this.ButtonToolTip.SetToolTip(this.brightnessBar, "Brightness");
+            this.brightnessBar.Value = 125;
+            this.brightnessBar.ValueChanged += new System.EventHandler(this.brightnessBar_ValueChanged);
+            // 
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(691, 173);
+            this.ClientSize = new System.Drawing.Size(691, 190);
+            this.Controls.Add(this.brightnessBar);
             this.Controls.Add(this.colorBox);
             this.Controls.Add(this.DotModeBtn);
             this.Controls.Add(this.RealBtn);
@@ -210,13 +225,14 @@
             this.Controls.Add(this.ckbEnable);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "Spectrum Viewer";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.SizeChanged += new System.EventHandler(this.Form1_SizeChanged);
             this.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.brightnessBar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -234,6 +250,7 @@
         private System.Windows.Forms.CheckBox DotModeBtn;
         private System.Windows.Forms.ComboBox colorBox;
         private System.Windows.Forms.ToolTip ButtonToolTip;
+        private System.Windows.Forms.TrackBar brightnessBar;
     }
 }
 
