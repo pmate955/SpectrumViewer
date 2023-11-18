@@ -198,14 +198,15 @@
             // brightnessBar
             // 
             this.brightnessBar.Location = new System.Drawing.Point(13, 168);
-            this.brightnessBar.Maximum = 250;
-            this.brightnessBar.Minimum = 30;
+            this.brightnessBar.Maximum = 100;
+            this.brightnessBar.Minimum = 10;
             this.brightnessBar.Name = "brightnessBar";
             this.brightnessBar.Size = new System.Drawing.Size(113, 45);
             this.brightnessBar.TabIndex = 13;
             this.ButtonToolTip.SetToolTip(this.brightnessBar, "Brightness");
-            this.brightnessBar.Value = 125;
-            this.brightnessBar.ValueChanged += new System.EventHandler(this.brightnessBar_ValueChanged);
+            this.brightnessBar.Value = 50;
+            //this.brightnessBar.ValueChanged += new System.EventHandler(this.brightnessBar_ValueChanged);
+            this.brightnessBar.MouseUp += new System.Windows.Forms.MouseEventHandler(this.brightnessBar_ValueChanged);
             // 
             // MainForm
             // 

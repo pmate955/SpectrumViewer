@@ -33,7 +33,7 @@ namespace SpectrumViewer
             this._sb = new StringBuilder(91);
             this._max = new byte[this._lines];
             this._isDotMode = false;
-            this._darkness = 100;
+            this._brightness = 50;
             Init();
         }
 
@@ -60,16 +60,16 @@ namespace SpectrumViewer
         private Chart _chart;               //ChartView for Form
         private StringBuilder _sb;          //Output stringbuilder for Serial
         private int _variableColor;         //Bar color depends on level
-        
+
         /// <summary>
         /// Is the dot mode enabled
         /// </summary>
         private bool _isDotMode;
-        
+
         /// <summary>
-        /// Every color channel reduced by this value
+        /// Color percent
         /// </summary>
-        private byte _darkness;      
+        private int _brightness;
 
         public void SetColor(int value)
         {
@@ -93,9 +93,9 @@ namespace SpectrumViewer
 
         public void SetBrightness(int value)
         {
-            if (value >= 0 && value < 255)
+            if (value > 10 && value <= 100)
             {
-                this._darkness = (byte)(255 - value);
+                this._brightness = value;
             }
         }
 
@@ -192,8 +192,6 @@ namespace SpectrumViewer
             }
 
             _sb.Clear();
-            this._sendDotMode();
-            this._sendColor();
             _sb.Append('_');
 
             for (int i = 0; i < _spectrumdata.Count; i++)
@@ -237,10 +235,12 @@ namespace SpectrumViewer
                         _chart.Series[0].Points[i].BackSecondaryColor = System.Drawing.Color.FromArgb(0, _max[i], 255);
                     }
                 }
-                char c = _getLevelCharacter(i);
+                char c = _getLevelCharacter(_max[i]);
                 _sb.Append(c);
             }
 
+            this._sendDotMode();
+            this._sendColor();
             if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
             _spectrumdata.Clear();
 
@@ -272,10 +272,9 @@ namespace SpectrumViewer
         /// </summary>
         /// <param name="i">Value between 0-255</param>
         /// <returns></returns>
-        private char _getLevelCharacter(int i)
+        private char _getLevelCharacter(byte b)
         {
             char c;
-            byte b = _max[i];
             if (b < 8) c = 'a';
             else if (b < 16) c = 'b';
             else if (b < 24) c = 'c';
@@ -329,33 +328,70 @@ namespace SpectrumViewer
         {
             if (Port != null)
             {
-                Port.Write(";");
-                byte r = 0, g = 0, b = 0;
+                byte r = 0, g = 0, b = 0, maxChannels = 0;
                 if (_variableColor == 0)
                 {
-                    b = (byte)(0xff - this._darkness);
+                    b = 0xff;
                 }
                 else if (this._variableColor == 1)
                 {
-                    g = (byte)(0xff - this._darkness); ;
+                    g = 0xff;
                 }
                 else if (this._variableColor == 2)
                 {
-                    r = (byte)(0xff - this._darkness);
+                    r = 0xff;
                 }
                 else if (this._variableColor == 3)
                 {
-                    g = (byte)(0xff - this._darkness);
-                    b = (byte)(0xff - this._darkness);
+                    g = 0xff;
+                    b = 0xff;
+                }
+                else if (this._variableColor == 4)
+                {
+                    r = 0xff;
+                    g = 0x45;
+                }
+                else if (this._variableColor == 5)
+                {
+                    b = 150;
+                    maxChannels = 4;
+                }
+                else if (this._variableColor == 6)
+                {
+                    g = 150;
+                    maxChannels = 5;
+                }
+                else if (this._variableColor == 7)
+                {
+                    b = 150;
+                    maxChannels = 2;
+                }
+                else if (this._variableColor == 8)
+                {
+                    r = 250;
+                    maxChannels = 2;
+                    b = 31;
                 }
                 else
                 {
-                    r = (byte)(0xff - this._darkness); ;
-                    g = (byte)(0xff - this._darkness); ;
-                    b = (byte)(0xff - this._darkness); ;
+                    r = 0xff;
+                    g = 0xff;
+                    b = 0xff;
                 }
 
-                Port.Write(new byte[] { r, g, b }, 0, 3);
+                r = (byte)(r > 0 ? (byte)(r * (this._brightness / 100.0)) : 0);
+                g = (byte)(g > 0 ? (byte)(g * (this._brightness / 100.0)) : 0);
+                b = (byte)(b > 0 ? (byte)(b * (this._brightness / 100.0)) : 0);
+
+                if (r < 0 || r > 255)
+                    r = 0;
+                if (g < 0 || g > 255)
+                    g = 0;
+                if (b < 0 || b > 255)
+                    b = 0;
+
+                Port.Write(";");
+                Port.Write(new byte[] { r, g, b, maxChannels }, 0, 4);
                 Port.Write(";");
             }
         }

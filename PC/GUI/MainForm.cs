@@ -198,7 +198,7 @@ namespace SpectrumViewer
                 if (this.Height <250)
                 {
                     this.Height = 250;
-                    chart1.Height = windowHeight - 40;
+                    chart1.Height = windowHeight;
                 }
                 this.Width = chart1.Width + 162;
                 deviceBox.Visible = true;
@@ -259,6 +259,7 @@ namespace SpectrumViewer
         private void brightnessBar_ValueChanged(object sender, EventArgs e)
         {
             this._analyser.SetBrightness(((TrackBar)(sender)).Value);
+            Console.WriteLine("TEST: " + ((TrackBar)(sender)).Value);
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
