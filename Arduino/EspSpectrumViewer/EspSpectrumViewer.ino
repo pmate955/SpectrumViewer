@@ -65,8 +65,9 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password); 
+  WiFi.setSleep(false);
 
-  delay(10000);
+  delay(5000);
   // Wait for connection  
   Serial.println("Connecting to Wifi");
   if (WiFi.status() == WL_CONNECTED) {   
@@ -85,12 +86,15 @@ void loop() {
     processByte(v);
   }
 
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    while (udp.available()) {
+  delay(1);
+  while (udp.parsePacket()) {
+    while (true) {
       int b = udp.read();
+      if (b == -1)
+        break;
       processByte(b);
     }    
+    delay(1);   
   }
 }
 

@@ -37,6 +37,7 @@ namespace SpectrumViewer
             this._max = new byte[this._lines];
             this._isDotMode = false;
             this._brightness = 50;
+            this._udpData = new List<byte>();
             Init();
         }
 
@@ -75,6 +76,8 @@ namespace SpectrumViewer
         /// Color percent
         /// </summary>
         private int _brightness;
+
+        private List<byte> _udpData;
 
         public void SetColor(int value)
         {
@@ -185,7 +188,7 @@ namespace SpectrumViewer
                 {
                     if (peak < _fftData[1 + b0]) peak = _fftData[1 + b0];
                 }
-                y = (int)(Math.Sqrt(peak) * 3 * 255 - 4);
+                y = (int)(Math.Sqrt(peak) * 3 * 200 - 4);
                 if (y > 255) y = 255;
                 if (y < 0) y = 0;
                 _spectrumdata.Add((byte)y);
@@ -198,7 +201,7 @@ namespace SpectrumViewer
 
             _sb.Clear();
             _sb.Append('_');
-            List<byte> udpData = new List<byte>();
+            
 
             for (int i = 0; i < _spectrumdata.Count; i++)
             {
@@ -245,18 +248,19 @@ namespace SpectrumViewer
                 _sb.Append(c);
             }
 
-            this._sendDotMode(udpData);
-            this._sendColor(udpData);
+            this._sendDotMode(_udpData);
+            this._sendColor(_udpData);
             if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
 
             if (UdpClient != null)
             {
                 ASCIIEncoding asen = new ASCIIEncoding();
-                udpData.AddRange(asen.GetBytes(_sb.ToString()));
-                byte[] buffer = udpData.ToArray();
+                _udpData.AddRange(asen.GetBytes(_sb.ToString()));
+                byte[] buffer = _udpData.ToArray();
                 UdpClient.Send(buffer, buffer.Length);
             }
 
+            _udpData.Clear();
             _spectrumdata.Clear();
 
             int level = BassWasapi.BASS_WASAPI_GetLevel();
