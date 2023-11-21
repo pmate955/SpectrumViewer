@@ -3,6 +3,7 @@
 #include <Ticker.h>
 #include <PxMatrix.h>
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 
 Ticker display_ticker;
 
@@ -39,8 +40,9 @@ bool dynamicColorChannels[3];
 bool isDotMode = false;
 
 // WIfi server
-int port = 8888; 
-WiFiServer server(port);
+int port = 3333; 
+WiFiUDP udp;
+char packetBuffer[255];
 const char *ssid = "Telekom-cc4591-2.4GHz";  //Enter your wifi SSID
 const char *password = "";  //Enter your wifi Password
 
@@ -69,7 +71,8 @@ void setup() {
   Serial.println("Connecting to Wifi");
   if (WiFi.status() == WL_CONNECTED) {   
     printSomething(WiFi.localIP().toString().c_str());
-    server.begin();
+    if (udp.begin(port) == 1)
+      printSomething(strcat ("UDP: ", WiFi.localIP().toString().c_str()));
   } else {
     printSomething("Wifi not available!");
   }  
@@ -81,22 +84,13 @@ void loop() {
     int v = Serial.read();
     processByte(v);
   }
-  WiFiClient client = server.available();
-  
-  if (client) {
-    if(client.connected())
-    {
-      printSomething("Client Connected");
-    }
-    
-    while(client.connected()){      
-      while(client.available()>0){
-        // read data from the connected client
-        processByte(client.read()); 
-      }
-    }
-    client.stop();
-    printSomething("Client disconnected");
+
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    while (udp.available()) {
+      int b = udp.read();
+      processByte(b);
+    }    
   }
 }
 

@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.ckbEnable = new System.Windows.Forms.CheckBox();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.deviceBox = new System.Windows.Forms.ComboBox();
@@ -64,27 +64,27 @@
             // 
             // chart1
             // 
-            chartArea3.AxisX.Maximum = 64D;
-            chartArea3.AxisX.Minimum = 0D;
-            chartArea3.AxisY.Maximum = 255D;
-            chartArea3.AxisY.Minimum = 0D;
-            chartArea3.BackColor = System.Drawing.Color.Black;
-            chartArea3.InnerPlotPosition.Auto = false;
-            chartArea3.InnerPlotPosition.Height = 100F;
-            chartArea3.InnerPlotPosition.Width = 100F;
-            chartArea3.Name = "ChartArea1";
-            chartArea3.Position.Auto = false;
-            chartArea3.Position.Height = 100F;
-            chartArea3.Position.Width = 100F;
-            this.chart1.ChartAreas.Add(chartArea3);
+            chartArea1.AxisX.Maximum = 64D;
+            chartArea1.AxisX.Minimum = 0D;
+            chartArea1.AxisY.Maximum = 255D;
+            chartArea1.AxisY.Minimum = 0D;
+            chartArea1.BackColor = System.Drawing.Color.Black;
+            chartArea1.InnerPlotPosition.Auto = false;
+            chartArea1.InnerPlotPosition.Height = 100F;
+            chartArea1.InnerPlotPosition.Width = 100F;
+            chartArea1.Name = "ChartArea1";
+            chartArea1.Position.Auto = false;
+            chartArea1.Position.Height = 100F;
+            chartArea1.Position.Width = 100F;
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Location = new System.Drawing.Point(146, 0);
             this.chart1.Name = "chart1";
-            series3.ChartArea = "ChartArea1";
-            series3.Color = System.Drawing.Color.Lime;
-            series3.EmptyPointStyle.IsVisibleInLegend = false;
-            series3.IsVisibleInLegend = false;
-            series3.Name = "Series1";
-            this.chart1.Series.Add(series3);
+            series1.ChartArea = "ChartArea1";
+            series1.Color = System.Drawing.Color.Lime;
+            series1.EmptyPointStyle.IsVisibleInLegend = false;
+            series1.IsVisibleInLegend = false;
+            series1.Name = "Series1";
+            this.chart1.Series.Add(series1);
             this.chart1.Size = new System.Drawing.Size(545, 238);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
@@ -216,7 +216,7 @@
             this.cbNetwork.Name = "cbNetwork";
             this.cbNetwork.Size = new System.Drawing.Size(51, 23);
             this.cbNetwork.TabIndex = 14;
-            this.cbNetwork.Text = "TCP";
+            this.cbNetwork.Text = "UDP";
             this.cbNetwork.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.cbNetwork.UseVisualStyleBackColor = true;
             this.cbNetwork.CheckedChanged += new System.EventHandler(this.cbNetwork_CheckedChanged);
@@ -227,6 +227,7 @@
             this.tbIpAddress.Name = "tbIpAddress";
             this.tbIpAddress.Size = new System.Drawing.Size(69, 20);
             this.tbIpAddress.TabIndex = 15;
+            this.tbIpAddress.Text = "192.168.0.12";
             // 
             // MainForm
             // 

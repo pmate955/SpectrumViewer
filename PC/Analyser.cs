@@ -11,6 +11,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.IO;
+using System.Net;
 
 namespace SpectrumViewer
 {
@@ -42,7 +43,7 @@ namespace SpectrumViewer
         // Serial port for arduino output
         public SerialPort Port { get; set; }
 
-        public TcpClient TcpClient { get; set; }
+        public UdpClient UdpClient { get; set; }
 
 
         // flag for display enable
@@ -197,6 +198,7 @@ namespace SpectrumViewer
 
             _sb.Clear();
             _sb.Append('_');
+            List<byte> udpData = new List<byte>();
 
             for (int i = 0; i < _spectrumdata.Count; i++)
             {
@@ -243,16 +245,16 @@ namespace SpectrumViewer
                 _sb.Append(c);
             }
 
-            this._sendDotMode();
-            this._sendColor();
+            this._sendDotMode(udpData);
+            this._sendColor(udpData);
             if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
 
-            if (TcpClient != null)
+            if (UdpClient != null)
             {
                 ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] buffer = asen.GetBytes(_sb.ToString());
-                TcpClient.GetStream().Write(buffer, 0, buffer.Length);
-                TcpClient.NoDelay = true;
+                udpData.AddRange(asen.GetBytes(_sb.ToString()));
+                byte[] buffer = udpData.ToArray();
+                UdpClient.Send(buffer, buffer.Length);
             }
 
             _spectrumdata.Clear();
@@ -326,23 +328,23 @@ namespace SpectrumViewer
         /// <summary>
         /// It sends a dot if we are in dot mode
         /// </summary>
-        private void _sendDotMode()
+        private void _sendDotMode(List<byte> udpData)
         {
             if (Port != null && this._isDotMode)
             {
                 Port.Write(".");
             }
 
-            if (TcpClient != null && this._isDotMode)
+            if (UdpClient != null && this._isDotMode)
             {
-                TcpClient.GetStream().WriteByte(46);
+                udpData.Add(46);
             }
         }
 
         /// <summary>
         /// It sends the graph color to Serial
         /// </summary>
-        private void _sendColor()
+        private void _sendColor(List<byte> udpData)
         {
 
             byte r = 0, g = 0, b = 0, maxChannels = 0;
@@ -414,10 +416,10 @@ namespace SpectrumViewer
                 Port.Write(";");
             }
 
-            if (TcpClient != null)
+            if (UdpClient != null)
             {
                 byte[] buffer = new byte[] { 59, r, g, b, maxChannels, 59 };
-                TcpClient.GetStream().Write(buffer, 0, buffer.Length);
+                udpData.AddRange(buffer);
             }
         }
 

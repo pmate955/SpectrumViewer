@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
 using System.Net.Sockets;
+using System.Net;
 
 namespace SpectrumViewer
 {
@@ -16,7 +17,7 @@ namespace SpectrumViewer
     {
         private Analyser _analyser;                 //Analyser DLL
         private SerialPort _port;                   //Serial port to communication
-        private TcpClient _tcpClient;
+        private UdpClient _udpClient;
         private Boolean _isHided;                   //Hide controllers
         private int windowWidth, windowHeight;      //Window size
 
@@ -273,24 +274,24 @@ namespace SpectrumViewer
                 tbIpAddress.Enabled = false;
                 try
                 {
-                    this._tcpClient = new TcpClient();
-                    this._tcpClient.Connect(tbIpAddress.Text, 8888);
-                    this._analyser.TcpClient = this._tcpClient;
+                    this._udpClient = new UdpClient(3333);
+                    this._udpClient.Connect(tbIpAddress.Text, 3333);
+                    this._analyser.UdpClient = this._udpClient;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("TCP connection exception: " + ex);
+                    MessageBox.Show("UDP connection exception: " + ex);
                     tbIpAddress.Enabled = true;
                 }
             }
             else
             {
                 tbIpAddress.Enabled = true;
-                this._analyser.TcpClient = null;
+                this._analyser.UdpClient = null;
 
-                if (this._tcpClient != null)
+                if (this._udpClient != null)
                 {
-                    this._tcpClient.Close();
+                    this._udpClient.Close();
                 }
             }
         }
