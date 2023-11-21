@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
+using System.Net.Sockets;
 
 namespace SpectrumViewer
 {
@@ -15,13 +16,14 @@ namespace SpectrumViewer
     {
         private Analyser _analyser;                 //Analyser DLL
         private SerialPort _port;                   //Serial port to communication
+        private TcpClient _tcpClient;
         private Boolean _isHided;                   //Hide controllers
         private int windowWidth, windowHeight;      //Window size
 
-        public MainForm()      
+        public MainForm()
         {
             InitializeComponent();
-            _analyser = new Analyser( chart1, deviceBox);
+            _analyser = new Analyser(chart1, deviceBox);
             _isHided = false;
             windowWidth = 545;
             windowHeight = 200;
@@ -51,8 +53,8 @@ namespace SpectrumViewer
                     }
                     else if (columns[0].Equals("DotMode"))
                     {
-                        if (columns[1].Equals("1")) DotModeBtn.Checked=true;
-                        
+                        if (columns[1].Equals("1")) DotModeBtn.Checked = true;
+
                     }
                     else if (columns[0].Equals("RealMode"))
                     {
@@ -69,13 +71,15 @@ namespace SpectrumViewer
                         {
                             alwaysOnTopCb.Checked = true;
                         }
-                    } else if (columns[0].Equals("ColorIndex"))
+                    }
+                    else if (columns[0].Equals("ColorIndex"))
                     {
                         try
                         {
                             int num = Int32.Parse(columns[1]);
                             colorBox.SelectedIndex = num;
-                        } catch (Exception)
+                        }
+                        catch (Exception)
                         {
 
                         }
@@ -91,8 +95,8 @@ namespace SpectrumViewer
 
         private void saveData()
         {
-            
-           // System.IO.File.WriteAllLines("conf.txt", lines);
+
+            // System.IO.File.WriteAllLines("conf.txt", lines);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -100,7 +104,7 @@ namespace SpectrumViewer
 
         }
 
-        
+
 
 
         private void ckbEnable_CheckedChanged(object sender, EventArgs e)               //Enable checkbutton
@@ -137,9 +141,9 @@ namespace SpectrumViewer
             {
                 if (serialEnabled.Checked == true)
                 {
-                    portBox.Enabled = false;                    
+                    portBox.Enabled = false;
                     _port = new SerialPort((portBox.Items[portBox.SelectedIndex] as string));
-                    _port.BaudRate = 57600;                                                         //Baudrate
+                    _port.BaudRate = 74880;                                                         //Baudrate
                     _port.StopBits = StopBits.One;
                     _port.Parity = Parity.None;
                     _port.DataBits = 8;
@@ -153,9 +157,9 @@ namespace SpectrumViewer
                     _analyser.Port = null;
                     if (_port != null)
                     {
-                      _port.Close();
-                      _port.Dispose();
-                      _port = null;
+                        _port.Close();
+                        _port.Dispose();
+                        _port = null;
                     }
                 }
             }
@@ -169,7 +173,7 @@ namespace SpectrumViewer
         {
             this.TopMost = alwaysOnTopCb.Checked;
         }
-        
+
         private void Form1_MouseDoubleClick(object sender, MouseEventArgs e)            //Hide/Show controls 
         {
             if (!_isHided)                                         //Hide controls
@@ -177,8 +181,8 @@ namespace SpectrumViewer
                 _isHided = true;
                 this.Height = windowHeight;
                 this.Width = windowWidth;
-                chart1.Height = windowHeight-40;
-                chart1.Width = windowWidth-15;
+                chart1.Height = windowHeight - 40;
+                chart1.Width = windowWidth - 15;
                 deviceBox.Visible = false;
                 portBox.Visible = false;
                 alwaysOnTopCb.Visible = false;      //
@@ -187,7 +191,7 @@ namespace SpectrumViewer
                 DotModeBtn.Visible = false;
                 RealBtn.Visible = false;
                 colorBox.Visible = false;
-                chart1.Location = new Point(0, 0);                
+                chart1.Location = new Point(0, 0);
                 this.FormBorderStyle = FormBorderStyle.Sizable;
             }
             else
@@ -195,9 +199,9 @@ namespace SpectrumViewer
                 windowWidth = this.Width;
                 windowHeight = this.Height;
                 _isHided = false;
-                if (this.Height <250)
+                if (this.Height < 280)
                 {
-                    this.Height = 250;
+                    this.Height = 280;
                     chart1.Height = windowHeight;
                 }
                 this.Width = chart1.Width + 162;
@@ -209,7 +213,7 @@ namespace SpectrumViewer
                 serialEnabled.Visible = true;
                 displayEnabled.Visible = true;
                 colorBox.Visible = true;
-                chart1.Location = new Point(145, 0);                
+                chart1.Location = new Point(145, 0);
                 this.FormBorderStyle = FormBorderStyle.FixedSingle;
             }
         }
@@ -220,7 +224,7 @@ namespace SpectrumViewer
         }
 
         private void DotModeBtn_CheckedChanged(object sender, EventArgs e)          //Dot mode
-        {          
+        {
             if (chart1.Series[0].ChartType == System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Point)
             {
                 chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column;
@@ -250,7 +254,8 @@ namespace SpectrumViewer
             try
             {
                 System.IO.File.WriteAllLines("conf.txt", lines);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
@@ -259,7 +264,35 @@ namespace SpectrumViewer
         private void brightnessBar_ValueChanged(object sender, EventArgs e)
         {
             this._analyser.SetBrightness(((TrackBar)(sender)).Value);
-            Console.WriteLine("TEST: " + ((TrackBar)(sender)).Value);
+        }
+
+        private void cbNetwork_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cbNetwork.Checked && tbIpAddress.Text != "")
+            {
+                tbIpAddress.Enabled = false;
+                try
+                {
+                    this._tcpClient = new TcpClient();
+                    this._tcpClient.Connect(tbIpAddress.Text, 8888);
+                    this._analyser.TcpClient = this._tcpClient;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("TCP connection exception: " + ex);
+                    tbIpAddress.Enabled = true;
+                }
+            }
+            else
+            {
+                tbIpAddress.Enabled = true;
+                this._analyser.TcpClient = null;
+
+                if (this._tcpClient != null)
+                {
+                    this._tcpClient.Close();
+                }
+            }
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -268,8 +301,8 @@ namespace SpectrumViewer
             {
                 chart1.Width = this.Width - 15;
                 chart1.Height = this.Height - 40;
-            }          
+            }
         }
     }
-    
+
 }

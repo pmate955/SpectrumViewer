@@ -9,6 +9,8 @@ using Un4seen.BassWasapi;
 using System.Windows.Threading;
 using System.Text;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.IO;
 
 namespace SpectrumViewer
 {
@@ -39,6 +41,8 @@ namespace SpectrumViewer
 
         // Serial port for arduino output
         public SerialPort Port { get; set; }
+
+        public TcpClient TcpClient { get; set; }
 
 
         // flag for display enable
@@ -242,6 +246,15 @@ namespace SpectrumViewer
             this._sendDotMode();
             this._sendColor();
             if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
+
+            if (TcpClient != null)
+            {
+                ASCIIEncoding asen = new ASCIIEncoding();
+                byte[] buffer = asen.GetBytes(_sb.ToString());
+                TcpClient.GetStream().Write(buffer, 0, buffer.Length);
+                TcpClient.NoDelay = true;
+            }
+
             _spectrumdata.Clear();
 
             int level = BassWasapi.BASS_WASAPI_GetLevel();
@@ -319,6 +332,11 @@ namespace SpectrumViewer
             {
                 Port.Write(".");
             }
+
+            if (TcpClient != null && this._isDotMode)
+            {
+                TcpClient.GetStream().WriteByte(46);
+            }
         }
 
         /// <summary>
@@ -326,73 +344,80 @@ namespace SpectrumViewer
         /// </summary>
         private void _sendColor()
         {
+
+            byte r = 0, g = 0, b = 0, maxChannels = 0;
+            if (_variableColor == 0)
+            {
+                b = 0xff;
+            }
+            else if (this._variableColor == 1)
+            {
+                g = 0xff;
+            }
+            else if (this._variableColor == 2)
+            {
+                r = 0xff;
+            }
+            else if (this._variableColor == 3)
+            {
+                g = 0xff;
+                b = 0xff;
+            }
+            else if (this._variableColor == 4)
+            {
+                r = 0xff;
+                g = 0x45;
+            }
+            else if (this._variableColor == 5)
+            {
+                b = 150;
+                maxChannels = 4;
+            }
+            else if (this._variableColor == 6)
+            {
+                g = 150;
+                maxChannels = 5;
+            }
+            else if (this._variableColor == 7)
+            {
+                b = 150;
+                maxChannels = 2;
+            }
+            else if (this._variableColor == 8)
+            {
+                r = 250;
+                maxChannels = 2;
+                b = 31;
+            }
+            else
+            {
+                r = 0xff;
+                g = 0xff;
+                b = 0xff;
+            }
+
+            r = (byte)(r > 0 ? (byte)(r * (this._brightness / 100.0)) : 0);
+            g = (byte)(g > 0 ? (byte)(g * (this._brightness / 100.0)) : 0);
+            b = (byte)(b > 0 ? (byte)(b * (this._brightness / 100.0)) : 0);
+
+            if (r < 0 || r > 255)
+                r = 0;
+            if (g < 0 || g > 255)
+                g = 0;
+            if (b < 0 || b > 255)
+                b = 0;
+
             if (Port != null)
             {
-                byte r = 0, g = 0, b = 0, maxChannels = 0;
-                if (_variableColor == 0)
-                {
-                    b = 0xff;
-                }
-                else if (this._variableColor == 1)
-                {
-                    g = 0xff;
-                }
-                else if (this._variableColor == 2)
-                {
-                    r = 0xff;
-                }
-                else if (this._variableColor == 3)
-                {
-                    g = 0xff;
-                    b = 0xff;
-                }
-                else if (this._variableColor == 4)
-                {
-                    r = 0xff;
-                    g = 0x45;
-                }
-                else if (this._variableColor == 5)
-                {
-                    b = 150;
-                    maxChannels = 4;
-                }
-                else if (this._variableColor == 6)
-                {
-                    g = 150;
-                    maxChannels = 5;
-                }
-                else if (this._variableColor == 7)
-                {
-                    b = 150;
-                    maxChannels = 2;
-                }
-                else if (this._variableColor == 8)
-                {
-                    r = 250;
-                    maxChannels = 2;
-                    b = 31;
-                }
-                else
-                {
-                    r = 0xff;
-                    g = 0xff;
-                    b = 0xff;
-                }
-
-                r = (byte)(r > 0 ? (byte)(r * (this._brightness / 100.0)) : 0);
-                g = (byte)(g > 0 ? (byte)(g * (this._brightness / 100.0)) : 0);
-                b = (byte)(b > 0 ? (byte)(b * (this._brightness / 100.0)) : 0);
-
-                if (r < 0 || r > 255)
-                    r = 0;
-                if (g < 0 || g > 255)
-                    g = 0;
-                if (b < 0 || b > 255)
-                    b = 0;
-
                 Port.Write(";");
                 Port.Write(new byte[] { r, g, b, maxChannels }, 0, 4);
                 Port.Write(";");
+            }
+
+            if (TcpClient != null)
+            {
+                byte[] buffer = new byte[] { 59, r, g, b, maxChannels, 59 };
+                TcpClient.GetStream().Write(buffer, 0, buffer.Length);
             }
         }
 
@@ -409,7 +434,5 @@ namespace SpectrumViewer
             BassWasapi.BASS_WASAPI_Free();
             Bass.BASS_Free();
         }
-
-
     }
 }

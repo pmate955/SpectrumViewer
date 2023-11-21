@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.ckbEnable = new System.Windows.Forms.CheckBox();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.deviceBox = new System.Windows.Forms.ComboBox();
@@ -43,6 +43,8 @@
             this.colorBox = new System.Windows.Forms.ComboBox();
             this.ButtonToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.brightnessBar = new System.Windows.Forms.TrackBar();
+            this.cbNetwork = new System.Windows.Forms.CheckBox();
+            this.tbIpAddress = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.brightnessBar)).BeginInit();
             this.SuspendLayout();
@@ -52,7 +54,7 @@
             this.ckbEnable.Appearance = System.Windows.Forms.Appearance.Button;
             this.ckbEnable.Location = new System.Drawing.Point(13, 27);
             this.ckbEnable.Name = "ckbEnable";
-            this.ckbEnable.Size = new System.Drawing.Size(112, 23);
+            this.ckbEnable.Size = new System.Drawing.Size(127, 23);
             this.ckbEnable.TabIndex = 2;
             this.ckbEnable.Text = "Enable";
             this.ckbEnable.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -62,28 +64,28 @@
             // 
             // chart1
             // 
-            chartArea1.AxisX.Maximum = 64D;
-            chartArea1.AxisX.Minimum = 0D;
-            chartArea1.AxisY.Maximum = 255D;
-            chartArea1.AxisY.Minimum = 0D;
-            chartArea1.BackColor = System.Drawing.Color.Black;
-            chartArea1.InnerPlotPosition.Auto = false;
-            chartArea1.InnerPlotPosition.Height = 100F;
-            chartArea1.InnerPlotPosition.Width = 100F;
-            chartArea1.Name = "ChartArea1";
-            chartArea1.Position.Auto = false;
-            chartArea1.Position.Height = 100F;
-            chartArea1.Position.Width = 100F;
-            this.chart1.ChartAreas.Add(chartArea1);
+            chartArea3.AxisX.Maximum = 64D;
+            chartArea3.AxisX.Minimum = 0D;
+            chartArea3.AxisY.Maximum = 255D;
+            chartArea3.AxisY.Minimum = 0D;
+            chartArea3.BackColor = System.Drawing.Color.Black;
+            chartArea3.InnerPlotPosition.Auto = false;
+            chartArea3.InnerPlotPosition.Height = 100F;
+            chartArea3.InnerPlotPosition.Width = 100F;
+            chartArea3.Name = "ChartArea1";
+            chartArea3.Position.Auto = false;
+            chartArea3.Position.Height = 100F;
+            chartArea3.Position.Width = 100F;
+            this.chart1.ChartAreas.Add(chartArea3);
             this.chart1.Location = new System.Drawing.Point(146, 0);
             this.chart1.Name = "chart1";
-            series1.ChartArea = "ChartArea1";
-            series1.Color = System.Drawing.Color.Lime;
-            series1.EmptyPointStyle.IsVisibleInLegend = false;
-            series1.IsVisibleInLegend = false;
-            series1.Name = "Series1";
-            this.chart1.Series.Add(series1);
-            this.chart1.Size = new System.Drawing.Size(545, 187);
+            series3.ChartArea = "ChartArea1";
+            series3.Color = System.Drawing.Color.Lime;
+            series3.EmptyPointStyle.IsVisibleInLegend = false;
+            series3.IsVisibleInLegend = false;
+            series3.Name = "Series1";
+            this.chart1.Series.Add(series3);
+            this.chart1.Size = new System.Drawing.Size(545, 238);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
             this.chart1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
@@ -93,7 +95,7 @@
             this.deviceBox.FormattingEnabled = true;
             this.deviceBox.Location = new System.Drawing.Point(13, 0);
             this.deviceBox.Name = "deviceBox";
-            this.deviceBox.Size = new System.Drawing.Size(112, 21);
+            this.deviceBox.Size = new System.Drawing.Size(127, 21);
             this.deviceBox.TabIndex = 4;
             this.ButtonToolTip.SetToolTip(this.deviceBox, "Audio source");
             // 
@@ -117,7 +119,7 @@
             this.portBox.FormattingEnabled = true;
             this.portBox.Location = new System.Drawing.Point(71, 116);
             this.portBox.Name = "portBox";
-            this.portBox.Size = new System.Drawing.Size(55, 21);
+            this.portBox.Size = new System.Drawing.Size(69, 21);
             this.portBox.TabIndex = 6;
             this.ButtonToolTip.SetToolTip(this.portBox, "Serial port");
             this.portBox.DropDown += new System.EventHandler(this.portBox_DropDown);
@@ -140,7 +142,7 @@
             this.alwaysOnTopCb.Appearance = System.Windows.Forms.Appearance.Button;
             this.alwaysOnTopCb.Location = new System.Drawing.Point(70, 85);
             this.alwaysOnTopCb.Name = "alwaysOnTopCb";
-            this.alwaysOnTopCb.Size = new System.Drawing.Size(55, 23);
+            this.alwaysOnTopCb.Size = new System.Drawing.Size(70, 23);
             this.alwaysOnTopCb.TabIndex = 8;
             this.alwaysOnTopCb.Text = "On Top";
             this.alwaysOnTopCb.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -153,7 +155,7 @@
             this.RealBtn.Appearance = System.Windows.Forms.Appearance.Button;
             this.RealBtn.Location = new System.Drawing.Point(70, 56);
             this.RealBtn.Name = "RealBtn";
-            this.RealBtn.Size = new System.Drawing.Size(55, 24);
+            this.RealBtn.Size = new System.Drawing.Size(70, 24);
             this.RealBtn.TabIndex = 10;
             this.RealBtn.Text = "Real ";
             this.RealBtn.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -188,7 +190,7 @@
             "Dynamic Cyan",
             "Dynamic Fire",
             "Dynamic sth"});
-            this.colorBox.Location = new System.Drawing.Point(13, 140);
+            this.colorBox.Location = new System.Drawing.Point(12, 176);
             this.colorBox.Name = "colorBox";
             this.colorBox.Size = new System.Drawing.Size(113, 21);
             this.colorBox.TabIndex = 12;
@@ -197,7 +199,7 @@
             // 
             // brightnessBar
             // 
-            this.brightnessBar.Location = new System.Drawing.Point(13, 168);
+            this.brightnessBar.Location = new System.Drawing.Point(13, 203);
             this.brightnessBar.Maximum = 100;
             this.brightnessBar.Minimum = 10;
             this.brightnessBar.Name = "brightnessBar";
@@ -205,14 +207,34 @@
             this.brightnessBar.TabIndex = 13;
             this.ButtonToolTip.SetToolTip(this.brightnessBar, "Brightness");
             this.brightnessBar.Value = 50;
-            //this.brightnessBar.ValueChanged += new System.EventHandler(this.brightnessBar_ValueChanged);
             this.brightnessBar.MouseUp += new System.Windows.Forms.MouseEventHandler(this.brightnessBar_ValueChanged);
+            // 
+            // cbNetwork
+            // 
+            this.cbNetwork.Appearance = System.Windows.Forms.Appearance.Button;
+            this.cbNetwork.Location = new System.Drawing.Point(13, 142);
+            this.cbNetwork.Name = "cbNetwork";
+            this.cbNetwork.Size = new System.Drawing.Size(51, 23);
+            this.cbNetwork.TabIndex = 14;
+            this.cbNetwork.Text = "TCP";
+            this.cbNetwork.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.cbNetwork.UseVisualStyleBackColor = true;
+            this.cbNetwork.CheckedChanged += new System.EventHandler(this.cbNetwork_CheckedChanged);
+            // 
+            // tbIpAddress
+            // 
+            this.tbIpAddress.Location = new System.Drawing.Point(71, 144);
+            this.tbIpAddress.Name = "tbIpAddress";
+            this.tbIpAddress.Size = new System.Drawing.Size(69, 20);
+            this.tbIpAddress.TabIndex = 15;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(691, 190);
+            this.ClientSize = new System.Drawing.Size(691, 250);
+            this.Controls.Add(this.tbIpAddress);
+            this.Controls.Add(this.cbNetwork);
             this.Controls.Add(this.brightnessBar);
             this.Controls.Add(this.colorBox);
             this.Controls.Add(this.DotModeBtn);
@@ -252,6 +274,8 @@
         private System.Windows.Forms.ComboBox colorBox;
         private System.Windows.Forms.ToolTip ButtonToolTip;
         private System.Windows.Forms.TrackBar brightnessBar;
+        private System.Windows.Forms.CheckBox cbNetwork;
+        private System.Windows.Forms.TextBox tbIpAddress;
     }
 }
 

@@ -1,28 +1,8 @@
 #define double_buffer
-/*******************************************************************
-    Using a 64 * 32 RGB Matrix to displays the Instructables
-    Mascot!
- *                                                                 *
-    Written by Brian Lough
-    https://www.youtube.com/channel/UCezJOfu7OtqGzd5xrP3q6WA
- *******************************************************************/
-
-// ----------------------------
-// Standard Libraries - Already Installed if you have ESP8266 set up
-// ----------------------------
 
 #include <Ticker.h>
-
-// ----------------------------
-// Additional Libraries - each one of these will need to be installed.
-// ----------------------------
-
-
 #include <PxMatrix.h>
-// The library for controlling the LED Matrix
-// Needs to be manually downloaded and installed
-// https://github.com/2dom/PxMatrix
-
+#include <ESP8266WiFi.h>
 
 Ticker display_ticker;
 
@@ -58,6 +38,12 @@ int b = 30;
 bool dynamicColorChannels[3];
 bool isDotMode = false;
 
+// WIfi server
+int port = 8888; 
+WiFiServer server(port);
+const char *ssid = "Telekom-cc4591-2.4GHz";  //Enter your wifi SSID
+const char *password = "";  //Enter your wifi Password
+
 // ISR for display refresh
 void display_updater()
 {
@@ -65,62 +51,90 @@ void display_updater()
 }
 
 void setup() {
-  Serial.begin(57600);
   display.begin(16);
   display_ticker.attach(0.002, display_updater);
   yield();
 
-  display.fillScreen(myWHITE);
-  display.flushDisplay();
-  display.setTextColor(myRED);
-  display.setCursor(15,13);
-  display.print("HA8MZ");
-  display.showBuffer();
+  printSomething("Init serial...");
+  Serial.begin(74880);
+  while (!Serial) { ; }
+  Serial.println(" Kapcsolodva " );
+  printSomething("Serial initialized. Connect Wifi!");
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password); 
+
+  delay(10000);
+  // Wait for connection  
+  Serial.println("Connecting to Wifi");
+  if (WiFi.status() == WL_CONNECTED) {   
+    printSomething(WiFi.localIP().toString().c_str());
+    server.begin();
+  } else {
+    printSomething("Wifi not available!");
+  }  
 }
 
 void loop() {
   while (Serial.available()) {
     //delay(2);  //delay to allow byte to arrive in input buffer
     int v = Serial.read();
-    char c = v;
-    if (c == '.' && !isColorInfo) {
-      isDotMode = true;
-    } else if (c == '_' && !isColorInfo) {  
-      position = 0;
-    } else if (c == ';' && !isColorInfo) {
-      isColorInfo = true;
-    } else if (isColorInfo && colorIndex == 0) {
-      r = v;
-      colorIndex++;
-    } else if (isColorInfo && colorIndex == 1) {
-      g = v;
-      colorIndex++;
-    } else if (isColorInfo && colorIndex == 2) {
-      b = v;
-      colorIndex++;
-    } else if (isColorInfo && colorIndex == 3) {
-      // dynamicColorChannels[0] = v == 4;
-      // dynamicColorChannels[1] = v == 2;
-      // dynamicColorChannels[2] = v == 1;
-      // TODO: Megoldani a bitbangelést!
-      dynamicColorChannels[0] = (v & 4) == 4;
-      dynamicColorChannels[1] = (v & 2) == 2;
-      dynamicColorChannels[2] = (v & 1) == 1;
-      colorIndex++;
-    } else if (c == ';' && isColorInfo) {
-      isColorInfo = false;
-      colorIndex = 0;
-    } else {
-      byte height = (c >= 'a' && c <= 'z' ? c - 'a' : c - 'A' + 26);
-      if (height >= 0 && height < 33)
-        levels[position++] = height;            
+    processByte(v);
+  }
+  WiFiClient client = server.available();
+  
+  if (client) {
+    if(client.connected())
+    {
+      printSomething("Client Connected");
     }
+    
+    while(client.connected()){      
+      while(client.available()>0){
+        // read data from the connected client
+        processByte(client.read()); 
+      }
+    }
+    client.stop();
+    printSomething("Client disconnected");
+  }
+}
 
-    if (position >= 64){     
-      display2(); 
-      isDotMode = false;
-      position = 0;   
-    }
+void processByte(int v) {
+  char c = v;
+  if (c == '.' && !isColorInfo) {
+    isDotMode = true;
+  } else if (c == '_' && !isColorInfo) {  
+    position = 0;
+  } else if (c == ';' && !isColorInfo) {
+    isColorInfo = true;
+  } else if (isColorInfo && colorIndex == 0) {
+    r = v;
+    colorIndex++;
+  } else if (isColorInfo && colorIndex == 1) {
+    g = v;
+    colorIndex++;
+  } else if (isColorInfo && colorIndex == 2) {
+    b = v;
+    colorIndex++;
+  } else if (isColorInfo && colorIndex == 3) {
+    dynamicColorChannels[0] = (v & 4) == 4;
+    dynamicColorChannels[1] = (v & 2) == 2;
+    dynamicColorChannels[2] = (v & 1) == 1;
+    colorIndex++;
+  } else if (c == ';' && isColorInfo) {
+    isColorInfo = false;
+    colorIndex = 0;
+  } else {
+    byte height = (c >= 'a' && c <= 'z' ? c - 'a' : c - 'A' + 26);
+    if (height >= 0 && height < 33)
+      levels[position++] = height;            
+  }
+
+  if (position >= 64){     
+    display2(); 
+    isDotMode = false;
+    position = 0;   
   }
 }
 
@@ -147,5 +161,15 @@ void display2() {
     position2--;
   }  
 
+  display.showBuffer();
+}
+
+void printSomething(const char* str) {
+  
+  display.fillScreen(myBLACK);
+  display.flushDisplay();
+  display.setTextColor(myRED);
+  display.setCursor(0,0);
+  display.print(str);
   display.showBuffer();
 }
