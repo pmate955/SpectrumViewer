@@ -70,12 +70,17 @@ void setup() {
   delay(5000);
   // Wait for connection  
   Serial.println("Connecting to Wifi");
+  int maxTry = 5;
+  int actual = 0;
+  while (actual++ < maxTry) {
   if (WiFi.status() == WL_CONNECTED) {   
     printSomething(WiFi.localIP().toString().c_str());
     if (udp.begin(port) == 1)
       printSomething(strcat ("UDP: ", WiFi.localIP().toString().c_str()));
+      break;
   } else {
-    printSomething("Wifi not available!");
+      printSomething("Wifi not available! Retry!");
+    }  
   }  
 }
 
