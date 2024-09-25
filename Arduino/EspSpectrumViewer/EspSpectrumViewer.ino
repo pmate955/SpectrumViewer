@@ -3,7 +3,6 @@
 #include <Ticker.h>
 #include <PxMatrix.h>
 #include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
 
 Ticker display_ticker;
 
@@ -39,9 +38,7 @@ int b = 30;
 bool dynamicColorChannels[3];
 bool isDotMode = false;
 
-// WIfi server
-int port = 3333; 
-WiFiUDP udp;
+WiFiServer wifiServer(3333);
 char packetBuffer[255];
 const char *ssid = "Telekom-cc4591-2.4GHz";  //Enter your wifi SSID
 const char *password = "";  //Enter your wifi Password
@@ -60,7 +57,7 @@ void setup() {
   printSomething("Init serial...");
   Serial.begin(74880);
   while (!Serial) { ; }
-  Serial.println(" Kapcsolodva " );
+  Serial.println(" Connected " );
   printSomething("Serial initialized. Connect Wifi!");
 
   WiFi.mode(WIFI_STA);
@@ -75,12 +72,14 @@ void setup() {
   while (actual++ < maxTry) {
   if (WiFi.status() == WL_CONNECTED) {   
     printSomething(WiFi.localIP().toString().c_str());
-    if (udp.begin(port) == 1)
-      printSomething(strcat ("UDP: ", WiFi.localIP().toString().c_str()));
+      // if (udp.begin(port) == 1)
+      wifiServer.begin();
+      printSomething(strcat ("TCP: ", WiFi.localIP().toString().c_str()));
       break;
   } else {
       printSomething("Wifi not available! Retry!");
     }  
+    delay(5000);
   }  
 }
 
@@ -91,15 +90,17 @@ void loop() {
     processByte(v);
   }
 
-  delay(1);
-  while (udp.parsePacket()) {
-    while (true) {
-      int b = udp.read();
-      if (b == -1)
-        break;
-      processByte(b);
+  WiFiClient client = wifiServer.available();
+ 
+  if (client) { 
+    while (client.connected()) { 
+      while (client.available() > 0) {
+        byte c = client.read();
+        processByte(c);
+      }
+      // delay(1);
     }    
-    delay(1);   
+    client.stop(); 
   }
 }
 
@@ -143,25 +144,25 @@ void processByte(int v) {
 
 void display2() {
   display.clearDisplay();
-  int position2 = display.width() - 1;
-  uint16_t col = display.color565(r, g, b);
+  int position2 = 0;
+  uint16_t columnColor = display.color565(r, g, b);
 
   for(int i = 0; i < 64; i++) {
     if (dynamicColorChannels[0])
-      col = display.color565(levels[i] * 6, g, b);
+      columnColor = display.color565(levels[i] * 6, g, b);
 
     if (dynamicColorChannels[1])
-      col = display.color565(r, levels[i] * 6, b);
+      columnColor = display.color565(r, levels[i] * 6, b);
 
     if (dynamicColorChannels[2])
-      col = display.color565(r, g, levels[i] * 6);
+      columnColor = display.color565(r, g, levels[i] * 6);
 
     if (isDotMode)
-      display.drawPixel(position2, levels[i], col);
+      display.drawPixel(position2, 31 - levels[i], columnColor);
     else 
-      display.drawLine(position2, 0, position2, levels[i],  col);
+      display.drawLine(position2, 31, position2, 31 - levels[i],  columnColor);
 
-    position2--;
+    position2++;
   }  
 
   display.showBuffer();
@@ -171,7 +172,7 @@ void printSomething(const char* str) {
   
   display.fillScreen(myBLACK);
   display.flushDisplay();
-  display.setTextColor(myRED);
+  display.setTextColor(myGREEN);
   display.setCursor(0,0);
   display.print(str);
   display.showBuffer();
