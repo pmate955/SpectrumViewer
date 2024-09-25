@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace SpectrumViewer
 {
@@ -24,7 +25,7 @@ namespace SpectrumViewer
             this._hanctr = 0;
             this._t = new DispatcherTimer();
             this._t.Tick += _t_Tick;
-            this._t.Interval = TimeSpan.FromMilliseconds(20); //40hz refresh rate
+            this._t.Interval = TimeSpan.FromMilliseconds(10); //40hz refresh rate
             this._t.IsEnabled = false;
             this._process = new WASAPIPROC(Process);
             this._spectrumdata = new List<byte>();
@@ -38,15 +39,15 @@ namespace SpectrumViewer
             this._isDotMode = false;
             this._brightness = 50;
             this._udpData = new List<byte>();
+            this._decreaseSteps = 5;
             Init();
         }
 
         // Serial port for arduino output
         public SerialPort Port { get; set; }
 
-        public UdpClient UdpClient { get; set; }
-
-
+        public Socket Socket { get; set; }
+        public IPEndPoint Endpoint { get; set; }
         // flag for display enable
         public bool DisplayEnable { get; set; }
 
@@ -66,7 +67,7 @@ namespace SpectrumViewer
         private Chart _chart;               //ChartView for Form
         private StringBuilder _sb;          //Output stringbuilder for Serial
         private int _variableColor;         //Bar color depends on level
-
+        private int _decreaseSteps;         //Decrease value if it's smaller than the last one
         /// <summary>
         /// Is the dot mode enabled
         /// </summary>
@@ -105,6 +106,11 @@ namespace SpectrumViewer
             {
                 this._brightness = value;
             }
+        }
+
+        public void SetSteps(int value)
+        {
+            this._decreaseSteps = value;
         }
 
         public void SetDotMode(bool isDotMode)
@@ -208,7 +214,7 @@ namespace SpectrumViewer
                 if (!_isRealMode)
                 {
                     if (_spectrumdata[i] > _max[i]) _max[i] = _spectrumdata[i];               //if the new level is greater than original, then set to max
-                    else if (_max[i] >= 12 && _spectrumdata[i] < _max[i] - 5) _max[i] -= 12;     //if greater than 12 and difference is bigger than 5, decrease by 12
+                    else if (_max[i] >= (byte)this._decreaseSteps && _spectrumdata[i] < _max[i] - 5) _max[i] -= (byte)this._decreaseSteps;     //if greater than 12 and difference is bigger than 5, decrease by 12
                     else if (_max[i] > 0) _max[i]--;                                          //else decrease by one
                 }
                 else
@@ -252,12 +258,15 @@ namespace SpectrumViewer
             this._sendColor(_udpData);
             if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
 
-            if (UdpClient != null)
+            if (Socket != null)
             {
                 ASCIIEncoding asen = new ASCIIEncoding();
                 _udpData.AddRange(asen.GetBytes(_sb.ToString()));
                 byte[] buffer = _udpData.ToArray();
-                UdpClient.Send(buffer, buffer.Length);
+                //TcpClient.Send(buffer, buffer.Length);
+                Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand);;
+                //Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand);
+                
             }
 
             _udpData.Clear();
@@ -309,23 +318,23 @@ namespace SpectrumViewer
             else if (b < 104) c = 'm';
             else if (b < 112) c = 'n';
             else if (b < 120) c = 'o';
-            else if (b < 128) c = 'q';
-            else if (b < 136) c = 'r';
-            else if (b < 144) c = 's';
-            else if (b < 152) c = 't';
-            else if (b < 160) c = 'u';
-            else if (b < 168) c = 'v';
-            else if (b < 176) c = 'w';
-            else if (b < 184) c = 'x';
-            else if (b < 192) c = 'y';
-            else if (b < 200) c = 'z';
-            else if (b < 208) c = 'A';
-            else if (b < 216) c = 'B';
-            else if (b < 224) c = 'C';
-            else if (b < 232) c = 'D';
-            else if (b < 240) c = 'E';
-            else if (b < 248) c = 'F';
-            else c = 'G';
+            else if (b < 128) c = 'p';
+            else if (b < 136) c = 'q';
+            else if (b < 144) c = 'r';
+            else if (b < 152) c = 's';
+            else if (b < 160) c = 't';
+            else if (b < 168) c = 'u';
+            else if (b < 176) c = 'v';
+            else if (b < 184) c = 'w';
+            else if (b < 192) c = 'x';
+            else if (b < 200) c = 'y';
+            else if (b < 208) c = 'z';
+            else if (b < 216) c = 'A';
+            else if (b < 224) c = 'B';
+            else if (b < 232) c = 'C';
+            else if (b < 240) c = 'D';
+            else if (b < 248) c = 'E';
+            else c = 'F';
             return c;
         }
 
@@ -339,7 +348,7 @@ namespace SpectrumViewer
                 Port.Write(".");
             }
 
-            if (UdpClient != null && this._isDotMode)
+            if (Socket != null && this._isDotMode)
             {
                 udpData.Add(46);
             }
@@ -420,7 +429,7 @@ namespace SpectrumViewer
                 Port.Write(";");
             }
 
-            if (UdpClient != null)
+            if (Socket != null)
             {
                 byte[] buffer = new byte[] { 59, r, g, b, maxChannels, 59 };
                 udpData.AddRange(buffer);

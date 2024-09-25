@@ -43,10 +43,12 @@
             this.colorBox = new System.Windows.Forms.ComboBox();
             this.ButtonToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.brightnessBar = new System.Windows.Forms.TrackBar();
+            this.tbSteps = new System.Windows.Forms.TrackBar();
             this.cbNetwork = new System.Windows.Forms.CheckBox();
             this.tbIpAddress = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.brightnessBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbSteps)).BeginInit();
             this.SuspendLayout();
             // 
             // ckbEnable
@@ -85,7 +87,7 @@
             series1.IsVisibleInLegend = false;
             series1.Name = "Series1";
             this.chart1.Series.Add(series1);
-            this.chart1.Size = new System.Drawing.Size(545, 238);
+            this.chart1.Size = new System.Drawing.Size(545, 267);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
             this.chart1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
@@ -209,6 +211,18 @@
             this.brightnessBar.Value = 50;
             this.brightnessBar.MouseUp += new System.Windows.Forms.MouseEventHandler(this.brightnessBar_ValueChanged);
             // 
+            // tbSteps
+            // 
+            this.tbSteps.Location = new System.Drawing.Point(22, 240);
+            this.tbSteps.Maximum = 14;
+            this.tbSteps.Minimum = 3;
+            this.tbSteps.Name = "tbSteps";
+            this.tbSteps.Size = new System.Drawing.Size(104, 45);
+            this.tbSteps.TabIndex = 16;
+            this.ButtonToolTip.SetToolTip(this.tbSteps, "Decrease steps");
+            this.tbSteps.Value = 5;
+            this.tbSteps.ValueChanged += new System.EventHandler(this.tbSteps_ValueChanged);
+            // 
             // cbNetwork
             // 
             this.cbNetwork.Appearance = System.Windows.Forms.Appearance.Button;
@@ -233,7 +247,8 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(691, 250);
+            this.ClientSize = new System.Drawing.Size(691, 270);
+            this.Controls.Add(this.tbSteps);
             this.Controls.Add(this.tbIpAddress);
             this.Controls.Add(this.cbNetwork);
             this.Controls.Add(this.brightnessBar);
@@ -257,6 +272,7 @@
             this.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDoubleClick);
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.brightnessBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tbSteps)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -277,6 +293,7 @@
         private System.Windows.Forms.TrackBar brightnessBar;
         private System.Windows.Forms.CheckBox cbNetwork;
         private System.Windows.Forms.TextBox tbIpAddress;
+        private System.Windows.Forms.TrackBar tbSteps;
     }
 }
 

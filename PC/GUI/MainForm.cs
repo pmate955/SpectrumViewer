@@ -17,7 +17,7 @@ namespace SpectrumViewer
     {
         private Analyser _analyser;                 //Analyser DLL
         private SerialPort _port;                   //Serial port to communication
-        private UdpClient _udpClient;
+        private Socket _socket;
         private Boolean _isHided;                   //Hide controllers
         private int windowWidth, windowHeight;      //Window size
 
@@ -85,6 +85,30 @@ namespace SpectrumViewer
 
                         }
 
+                    }
+                    else if (columns[0].Equals("Steps"))
+                    {
+                        try
+                        {
+                            int num = Int32.Parse(columns[1]);
+                            tbSteps.Value = num;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    }
+                    else if (columns[0].Equals("Brightness"))
+                    {
+                        try
+                        {
+                            int num = Int32.Parse(columns[1]);
+                            brightnessBar.Value = num;
+                        }
+                        catch (Exception)
+                        {
+
+                        }
                     }
                 }
             }
@@ -245,13 +269,15 @@ namespace SpectrumViewer
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            string[] lines = new string[6];
+            string[] lines = new string[8];
             lines[0] = "SourceIndex " + deviceBox.SelectedIndex;
             lines[1] = "DotMode " + (DotModeBtn.Checked ? "1" : "0");
             lines[2] = "RealMode " + (RealBtn.Checked ? "1" : "0");
             lines[3] = "Display " + (displayEnabled.Checked ? "1" : "0");
             lines[4] = "OnTop " + (alwaysOnTopCb.Checked ? "1" : "0");
             lines[5] = "ColorIndex " + colorBox.SelectedIndex;
+            lines[6] = "Steps " + tbSteps.Value; 
+            lines[7] = "Brightness " + brightnessBar.Value;
             try
             {
                 System.IO.File.WriteAllLines("conf.txt", lines);
@@ -267,6 +293,11 @@ namespace SpectrumViewer
             this._analyser.SetBrightness(((TrackBar)(sender)).Value);
         }
 
+        private void tbSteps_ValueChanged(object sender, EventArgs e)
+        {
+            this._analyser.SetSteps(((TrackBar)(sender)).Value);
+        }
+
         private void cbNetwork_CheckedChanged(object sender, EventArgs e)
         {
             if (cbNetwork.Checked && tbIpAddress.Text != "")
@@ -274,9 +305,12 @@ namespace SpectrumViewer
                 tbIpAddress.Enabled = false;
                 try
                 {
-                    this._udpClient = new UdpClient(3333);
-                    this._udpClient.Connect(tbIpAddress.Text, 3333);
-                    this._analyser.UdpClient = this._udpClient;
+                    this._socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    this._analyser.Socket = this._socket;
+                    this._analyser.Socket.Connect(tbIpAddress.Text, 3333);
+                    this._analyser.Socket.NoDelay = true;
+                    //this._analyser.Socket.Blocking = false;
+                    //this._analyser.Socket.DontFragment = true;
                 }
                 catch (Exception ex)
                 {
@@ -287,11 +321,11 @@ namespace SpectrumViewer
             else
             {
                 tbIpAddress.Enabled = true;
-                this._analyser.UdpClient = null;
+                this._analyser.Socket = null;
 
-                if (this._udpClient != null)
+                if (this._socket != null)
                 {
-                    this._udpClient.Close();
+                    this._socket.Close();
                 }
             }
         }
