@@ -27,7 +27,7 @@ uint16_t myCYAN = display.color565(0, 255, 255);
 uint16_t myMAGENTA = display.color565(255, 0, 255);
 uint16_t myBLACK = display.color565(0, 0, 0);
 
-uint16 myCOLORS[8] = {myRED, myGREEN, myBLUE, myWHITE, myYELLOW, myCYAN, myMAGENTA, myBLACK};
+// FFT data
 int position = 0;
 bool isColorInfo = false;
 int colorIndex = 0;
@@ -38,6 +38,24 @@ int b = 30;
 bool dynamicColorChannels[3];
 bool isDotMode = false;
 
+// Screen saver
+bool isScreenSaver = false;
+unsigned long lastCommunication = millis();
+
+struct Snowflake {
+  int8_t Position = -1;      
+  uint8_t StepCycle = 1;     
+  uint8_t ActualStep = 0;    
+  uint8_t Red = 100;    
+  uint8_t Green = 100;    
+  uint8_t Blue = 100;    
+};
+
+Snowflake snowflakes[64];
+int actualSnowflakes = 0;
+int maxSnowflakes = 18;
+
+// Wifi socket
 WiFiServer wifiServer(3333);
 char packetBuffer[255];
 const char *ssid = "Telekom-cc4591-2.4GHz";  //Enter your wifi SSID
@@ -49,9 +67,11 @@ void display_updater()
   display.display(20);
 }
 
+// Setup with WiFi, display and Serial initialization
 void setup() {
   display.begin(16);
   display_ticker.attach(0.002, display_updater);
+  display.setFastUpdate(true);
   yield();
 
   printSomething("Init serial...");
@@ -71,10 +91,8 @@ void setup() {
   int actual = 0;
   while (actual++ < maxTry) {
   if (WiFi.status() == WL_CONNECTED) {   
-    printSomething(WiFi.localIP().toString().c_str());
-      // if (udp.begin(port) == 1)
       wifiServer.begin();
-      printSomething(strcat ("TCP: ", WiFi.localIP().toString().c_str()));
+      printSomething(WiFi.localIP().toString().c_str());
       break;
   } else {
       printSomething("Wifi not available! Retry!");
@@ -83,6 +101,7 @@ void setup() {
   }  
 }
 
+// Main loop with serial and socket processing
 void loop() {
   while (Serial.available()) {
     //delay(2);  //delay to allow byte to arrive in input buffer
@@ -98,51 +117,57 @@ void loop() {
         byte c = client.read();
         processByte(c);
       }
-      // delay(1);
+      screenSaver();
     }    
     client.stop(); 
+  } else {
+    screenSaver();
   }
+
 }
 
+// State machine to process message byte
 void processByte(int v) {
+  isScreenSaver = false;
+  lastCommunication = millis();
   char c = v;
-  if (c == '.' && !isColorInfo) {
+  if (c == '.' && !isColorInfo) {               // The first byte is the dot mode
     isDotMode = true;
-  } else if (c == '_' && !isColorInfo) {  
+  } else if (c == '_' && !isColorInfo) {        // _ character is the start 
     position = 0;
-  } else if (c == ';' && !isColorInfo) {
+  } else if (c == ';' && !isColorInfo) {        // ; character contains color info
     isColorInfo = true;
-  } else if (isColorInfo && colorIndex == 0) {
+  } else if (isColorInfo && colorIndex == 0) {  // If color info, the first it the red valure
     r = v;
     colorIndex++;
-  } else if (isColorInfo && colorIndex == 1) {
+  } else if (isColorInfo && colorIndex == 1) {  // Second is the green
     g = v;
     colorIndex++;
-  } else if (isColorInfo && colorIndex == 2) {
+  } else if (isColorInfo && colorIndex == 2) {  // Third is blue
     b = v;
     colorIndex++;
-  } else if (isColorInfo && colorIndex == 3) {
+  } else if (isColorInfo && colorIndex == 3) {  // The 4. byte contains which channels can change by level
     dynamicColorChannels[0] = (v & 4) == 4;
     dynamicColorChannels[1] = (v & 2) == 2;
     dynamicColorChannels[2] = (v & 1) == 1;
     colorIndex++;
-  } else if (c == ';' && isColorInfo) {
+  } else if (c == ';' && isColorInfo) {         // ; character ends the color info too
     isColorInfo = false;
     colorIndex = 0;
-  } else {
+  } else {                                      // By default the a-z byte or over A is the level 
     byte height = (c >= 'a' && c <= 'z' ? c - 'a' : c - 'A' + 26);
     if (height >= 0 && height < 33)
       levels[position++] = height;            
   }
 
-  if (position >= 64){     
-    display2(); 
+  if (position >= 64){                          // After we got all values, update the display
+    drawSpectrum(); 
     isDotMode = false;
     position = 0;   
   }
 }
 
-void display2() {
+void drawSpectrum() {
   display.clearDisplay();
   int position2 = 0;
   uint16_t columnColor = display.color565(r, g, b);
@@ -150,19 +175,15 @@ void display2() {
   for(int i = 0; i < 64; i++) {
     if (dynamicColorChannels[0])
       columnColor = display.color565(levels[i] * 6, g, b);
-
-    if (dynamicColorChannels[1])
+    else if (dynamicColorChannels[1])
       columnColor = display.color565(r, levels[i] * 6, b);
-
-    if (dynamicColorChannels[2])
+    else if (dynamicColorChannels[2])
       columnColor = display.color565(r, g, levels[i] * 6);
 
     if (isDotMode)
-      display.drawPixel(position2, 31 - levels[i], columnColor);
+      display.drawPixel(i, 31 - levels[i], columnColor);
     else 
-      display.drawLine(position2, 31, position2, 31 - levels[i],  columnColor);
-
-    position2++;
+      display.drawLine(i, 31, i, 31 - levels[i],  columnColor);
   }  
 
   display.showBuffer();
@@ -172,7 +193,7 @@ void printSomething(const char* str) {
   
   display.fillScreen(myBLACK);
   display.flushDisplay();
-  display.setTextColor(myGREEN);
+  display.setTextColor(myWHITE);
   display.setCursor(0,0);
   display.print(str);
   display.showBuffer();

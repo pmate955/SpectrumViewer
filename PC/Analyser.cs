@@ -40,6 +40,7 @@ namespace SpectrumViewer
             this._brightness = 50;
             this._udpData = new List<byte>();
             this._decreaseSteps = 5;
+            this._hadPreviousData = true;
             Init();
         }
 
@@ -68,6 +69,8 @@ namespace SpectrumViewer
         private StringBuilder _sb;          //Output stringbuilder for Serial
         private int _variableColor;         //Bar color depends on level
         private int _decreaseSteps;         //Decrease value if it's smaller than the last one
+        private bool _hadPreviousData;       // If the spectrum shows only 0 values for second time, we will not send anything;
+
         /// <summary>
         /// Is the dot mode enabled
         /// </summary>
@@ -207,10 +210,12 @@ namespace SpectrumViewer
 
             _sb.Clear();
             _sb.Append('_');
-            
+
+            bool hasNotNullData = false;
 
             for (int i = 0; i < _spectrumdata.Count; i++)
             {
+
                 if (!_isRealMode)
                 {
                     if (_spectrumdata[i] > _max[i]) _max[i] = _spectrumdata[i];               //if the new level is greater than original, then set to max
@@ -221,6 +226,10 @@ namespace SpectrumViewer
                 {
                     _max[i] = _spectrumdata[i];
                 }
+
+                if (_max[i] > 0)
+                    hasNotNullData = true;
+
                 if (DisplayEnable)
                 {
                     _chart.Series[0].Points.AddXY(i + 1, _max[i]);
@@ -254,19 +263,43 @@ namespace SpectrumViewer
                 _sb.Append(c);
             }
 
-            this._sendDotMode(_udpData);
-            this._sendColor(_udpData);
-            if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
+            bool hasToSend = true;
 
-            if (Socket != null)
+            if (!hasNotNullData)
             {
-                ASCIIEncoding asen = new ASCIIEncoding();
-                _udpData.AddRange(asen.GetBytes(_sb.ToString()));
-                byte[] buffer = _udpData.ToArray();
-                //TcpClient.Send(buffer, buffer.Length);
-                Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand);;
-                //Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand);
-                
+                if (this._hadPreviousData)
+                    this._hadPreviousData = false;
+                else
+                    hasToSend = false;
+            }
+            else
+            {
+                this._hadPreviousData = true;
+            }
+
+            if (hasToSend)
+            {
+                this._sendDotMode(_udpData);
+                this._sendColor(_udpData);
+                if (Port != null) Port.Write(_sb.ToString()); //Serial.Write(output);
+
+                if (Socket != null)
+                {
+                    ASCIIEncoding asen = new ASCIIEncoding();
+                    _udpData.AddRange(asen.GetBytes(_sb.ToString()));
+                    byte[] buffer = _udpData.ToArray();
+                    //TcpClient.Send(buffer, buffer.Length);
+                    try
+                    {
+                        Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand); ;
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Comm error");
+                    }
+                    //Socket.Send(buffer, 0, buffer.Length, SocketFlags.OutOfBand);
+
+                }
             }
 
             _udpData.Clear();
